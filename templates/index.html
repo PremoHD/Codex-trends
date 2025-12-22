@@ -6,23 +6,32 @@
 <body>
   <h1>Ellis Platform Dashboard</h1>
 
+  <!-- Display Wallet Info -->
   <button onclick="getAddress()">Get Wallet Address</button>
   <p id="address"></p>
 
   <button onclick="getBalance()">Check Balance</button>
   <p id="balance"></p>
 
+  <!-- Faucet -->
   <h3>Request Testnet BTC (Faucet)</h3>
   <button onclick="requestFaucet()">Request Faucet</button>
   <p id="faucet"></p>
 
+  <!-- Send BTC -->
   <h3>Send BTC</h3>
-  <textarea id="sendData" rows="6" cols="50">
-[
-  {"address":"tb1qexampleaddress1","amount":0.00001}
-]
-  </textarea><br>
-  <button onclick="sendBTC()">Send</button>
+
+  <!-- Input Fields -->
+  <label for="fromAddress">From Address (optional):</label><br>
+  <input type="text" id="fromAddress" placeholder="Leave blank for default wallet"><br><br>
+
+  <label for="toAddress">Destination Address:</label><br>
+  <input type="text" id="toAddress" placeholder="Enter recipient address"><br><br>
+
+  <label for="amount">Amount (BTC):</label><br>
+  <input type="number" id="amount" step="0.00000001" placeholder="0.00001"><br><br>
+
+  <button onclick="sendBTC()">Send BTC</button>
   <p id="txid"></p>
 
 <script>
@@ -45,14 +54,31 @@ function requestFaucet() {
 }
 
 function sendBTC() {
+  const fromAddr = document.getElementById('fromAddress').value
+  const toAddr = document.getElementById('toAddress').value
+  const amount = parseFloat(document.getElementById('amount').value)
+
+  if (!toAddr || !amount) {
+    alert("Please enter a valid destination address and amount")
+    return
+  }
+
+  const data = [
+    {
+      "address": toAddr,
+      "amount": amount
+    }
+  ]
+
   fetch('/wallet/send', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: document.getElementById('sendData').value
+    body: JSON.stringify(data)
   })
   .then(r => r.json())
-  .then(d => document.getElementById('txid').innerText = d.txid)
+  .then(d => document.getElementById('txid').innerText = "TXID: " + d.txid)
 }
 </script>
+
 </body>
 </html>
