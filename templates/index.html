@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ellis Blockchain Dashboard</title>
+  <title>Ellis Platform Dashboard</title>
 </head>
 <body>
   <h1>Ellis Platform Dashboard</h1>
 
-  <!-- Display Wallet Info -->
+  <!-- Wallet Info -->
   <button onclick="getAddress()">Get Wallet Address</button>
   <p id="address"></p>
 
@@ -14,21 +14,16 @@
   <p id="balance"></p>
 
   <!-- Faucet -->
-  <h3>Request Testnet BTC (Faucet)</h3>
+  <h3>Request Testnet BTC</h3>
   <button onclick="requestFaucet()">Request Faucet</button>
   <p id="faucet"></p>
 
   <!-- Send BTC -->
   <h3>Send BTC</h3>
+  <label>Destination Addresses (comma-separated, max 100):</label><br>
+  <textarea id="toAddresses" rows="6" cols="50" placeholder="tb1qaddr1,tb1qaddr2,..."></textarea><br><br>
 
-  <!-- Input Fields -->
-  <label for="fromAddress">From Address (optional):</label><br>
-  <input type="text" id="fromAddress" placeholder="Leave blank for default wallet"><br><br>
-
-  <label for="toAddress">Destination Address:</label><br>
-  <input type="text" id="toAddress" placeholder="Enter recipient address"><br><br>
-
-  <label for="amount">Amount (BTC):</label><br>
+  <label>Amount per address (BTC):</label><br>
   <input type="number" id="amount" step="0.00000001" placeholder="0.00001"><br><br>
 
   <button onclick="sendBTC()">Send BTC</button>
@@ -50,35 +45,42 @@ function getBalance() {
 function requestFaucet() {
   fetch('/wallet/faucet')
     .then(r => r.json())
-    .then(d => document.getElementById('faucet').innerText = JSON.stringify(d))
+    .then(d => {
+      document.getElementById('faucet').innerText = JSON.stringify(d)
+      getBalance() // auto-update balance after faucet
+    })
 }
 
 function sendBTC() {
-  const fromAddr = document.getElementById('fromAddress').value
-  const toAddr = document.getElementById('toAddress').value
+  const addresses = document.getElementById('toAddresses').value.split(',').map(a=>a.trim())
   const amount = parseFloat(document.getElementById('amount').value)
 
-  if (!toAddr || !amount) {
-    alert("Please enter a valid destination address and amount")
+  if (addresses.length === 0 || !amount) {
+    alert("Enter at least one destination address and amount")
+    return
+  }
+  if (addresses.length > 100) {
+    alert("Max 100 addresses per transaction")
     return
   }
 
-  const data = [
-    {
-      "address": toAddr,
-      "amount": amount
-    }
-  ]
+  const data = addresses.map(addr => ({address: addr, amount: amount}))
 
   fetch('/wallet/send', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify(data)
   })
-  .then(r => r.json())
-  .then(d => document.getElementById('txid').innerText = "TXID: " + d.txid)
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.txid){
+      document.getElementById('txid').innerText = "TXID: " + d.txid
+      getBalance() // auto-update balance after send
+    } else {
+      document.getElementById('txid').innerText = "Error: " + JSON.stringify(d)
+    }
+  })
 }
 </script>
-
 </body>
 </html>
