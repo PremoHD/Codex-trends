@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ellis Blockchain Dashboard</title>
+</head>
+<body>
+  <h1>Ellis Platform Dashboard</h1>
+
+  <button onclick="getAddress()">Get Wallet Address</button>
+  <p id="address"></p>
+
+  <button onclick="getBalance()">Check Balance</button>
+  <p id="balance"></p>
+
+  <h3>Request Testnet BTC (Faucet)</h3>
+  <button onclick="requestFaucet()">Request Faucet</button>
+  <p id="faucet"></p>
+
+  <h3>Send BTC</h3>
+  <textarea id="sendData" rows="6" cols="50">
+[
+  {"address":"tb1qexampleaddress1","amount":0.00001}
+]
+  </textarea><br>
+  <button onclick="sendBTC()">Send</button>
+  <p id="txid"></p>
+
+<script>
+function getAddress() {
+  fetch('/wallet/address')
+    .then(r => r.json())
+    .then(d => document.getElementById('address').innerText = d.address)
+}
+
+function getBalance() {
+  fetch('/wallet/balance')
+    .then(r => r.json())
+    .then(d => document.getElementById('balance').innerText = d.balance)
+}
+
+function requestFaucet() {
+  fetch('/wallet/faucet')
+    .then(r => r.json())
+    .then(d => document.getElementById('faucet').innerText = JSON.stringify(d))
+}
+
+function sendBTC() {
+  fetch('/wallet/send', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: document.getElementById('sendData').value
+  })
+  .then(r => r.json())
+  .then(d => document.getElementById('txid').innerText = d.txid)
+}
+</script>
+</body>
+</html>
