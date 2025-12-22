@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify, render_template
 from bitcoinlib.wallets import Wallet
 import requests
+import json
 
 app = Flask(__name__, template_folder='templates')
 
 # -----------------------------
-# Wallet configuration
+# Wallet config
 # -----------------------------
-NETWORK = 'bitcoin'  # change to 'bitcoin' for mainnet
+NETWORK = 'testnet'  # safe for testing
 WALLET_NAME = 'JustusCodeSpaceWallet'
 
 try:
@@ -16,11 +17,11 @@ except:
     wallet = Wallet.create(WALLET_NAME, network=NETWORK)
 
 # -----------------------------
-# Wallet routes
+# Routes
 # -----------------------------
 @app.route('/')
 def dashboard():
-    return render_template('index.html')  # HTML dashboard
+    return render_template('index.html')
 
 @app.route('/wallet/address')
 def address():
@@ -31,18 +32,6 @@ def address():
 def balance():
     return jsonify({"balance": wallet.balance()})
 
-@app.route('/wallet/send', methods=['POST'])
-def send():
-    data = request.json  # [{ "address": "...", "amount": 0.00001 }]
-    outputs = [(x['address'], float(x['amount'])) for x in data]
-    tx = wallet.transaction_create(outputs, fee='normal')
-    wallet.transaction_sign(tx)
-    wallet.transaction_send(tx)
-    return jsonify({"txid": tx.txid})
-
-# -----------------------------
-# Faucet route (testnet only)
-# -----------------------------
 @app.route('/wallet/faucet')
 def faucet():
     address = wallet.get_key().address
@@ -52,6 +41,18 @@ def faucet():
         return jsonify({"status": "requested", "response": resp.json()})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/wallet/send', methods=['POST'])
+def send():
+    data = request.json  # [{"address":"...", "amount":0.00001}, ...]
+    if len(data) > 100:
+        return jsonify({"error": "Max 100 addresses allowed per transaction"}), 400
+
+    outputs = [(x['address'], float(x['amount'])) for x in data]
+    tx = wallet.transaction_create(outputs, fee='normal')
+    wallet.transaction_sign(tx)
+    wallet.transaction_send(tx)
+    return jsonify({"txid": tx.txid})
 
 # -----------------------------
 # Run server
